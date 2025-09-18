@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Project Hub</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1017;
+      --surface: #151b24;
+      --surface-alt: #1f2633;
+      --accent: #4f8cff;
+      --accent-soft: rgba(79, 140, 255, 0.18);
+      --text: #f5f7fb;
+      --muted: #9aa4bf;
+      --danger: #ff6b81;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 20%, rgba(79, 140, 255, 0.25), transparent 45%),
+        radial-gradient(circle at 80% 0%, rgba(255, 107, 129, 0.18), transparent 35%), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 2.5rem 5vw 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3vw + 1rem, 3rem);
+      letter-spacing: 0.04em;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .toolbar form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.75rem;
+      padding: 0.6rem 1rem;
+      color: var(--text);
+      min-width: 12rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    button {
+      background: var(--surface-alt);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 0.75rem;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      gap: 2rem;
+      padding: 2rem 5vw 3rem;
+      grid-template-columns: 1fr;
+    }
+
+    .workspace {
+      display: grid;
+      gap: 2rem;
+      grid-template-columns: 3fr 1fr;
+      align-items: start;
+    }
+
+    .board {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: var(--surface);
+      border-radius: 1rem;
+      padding: 1rem;
+      min-height: 60vh;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .column.drag-over {
+      border-color: var(--accent);
+      background: rgba(79, 140, 255, 0.12);
+    }
+
+    .column h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .column .empty-state {
+      margin-top: 2rem;
+      text-align: center;
+      color: rgba(154, 164, 191, 0.6);
+      font-size: 0.95rem;
+    }
+
+    .task-card {
+      background: var(--surface-alt);
+      border-radius: 1rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .task-card.dragging {
+      opacity: 0.7;
+      transform: scale(1.01);
+    }
+
+    .task-card header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0;
+      background: none;
+      border: none;
+    }
+
+    .task-card h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .tag {
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 4.5rem;
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      color: var(--text);
+      font-family: inherit;
+      line-height: 1.5;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .card-actions button {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.9rem;
+      border-radius: 0.65rem;
+    }
+
+    aside {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: sticky;
+      top: 2rem;
+    }
+
+    .pomodoro-display {
+      font-size: clamp(2.2rem, 3vw + 1rem, 3rem);
+      letter-spacing: 0.2em;
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .pomodoro-controls {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .pomodoro-controls button {
+      flex: 1;
+      font-size: 1.1rem;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.95rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1100px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      aside {
+        position: static;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .board {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+    }
+
+    @media (max-width: 600px) {
+      header {
+        padding: 2rem 6vw 1.5rem;
+      }
+
+      main {
+        padding: 1.5rem 6vw 2.5rem;
+      }
+
+      .toolbar form {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+      }
+
+      .toolbar input[type="text"],
+      .toolbar button {
+        width: 100%;
+      }
+
+      .pomodoro-controls button {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mini Project Hub</h1>
+    <p>Organiza tus tareas esenciales, mantén el foco con el Pomodoro integrado y sincroniza tu flujo en un único panel minimalista.</p>
+    <div class="toolbar">
+      <form id="task-form">
+        <input id="task-title" type="text" placeholder="Título de la tarea" required />
+        <input id="task-tags" type="text" placeholder="Tags (separados por comas)" />
+        <button type="submit">Añadir tarea</button>
+      </form>
+      <button id="export-csv" type="button">Exportar CSV</button>
+      <button id="import-csv" type="button">Importar CSV</button>
+      <button id="clear-all" type="button">Borrar todo</button>
+      <input id="csv-file" type="file" accept=".csv" hidden />
+    </div>
+  </header>
+  <main>
+    <div class="workspace">
+      <section class="board" aria-label="Tablero Kanban">
+        <div class="column" data-state="todo">
+          <h2>Por hacer</h2>
+          <div class="column-body"></div>
+        </div>
+        <div class="column" data-state="doing">
+          <h2>En curso</h2>
+          <div class="column-body"></div>
+        </div>
+        <div class="column" data-state="done">
+          <h2>Hecho</h2>
+          <div class="column-body"></div>
+        </div>
+      </section>
+      <aside>
+        <h2>Pomodoro</h2>
+        <p class="muted">25 minutos de foco profundo. Controla el temporizador sin abandonar el tablero.</p>
+        <div class="pomodoro-display" id="pomodoro-display">25:00</div>
+        <div class="pomodoro-controls">
+          <button id="pomodoro-start" type="button">▶</button>
+          <button id="pomodoro-pause" type="button">⏸</button>
+          <button id="pomodoro-reset" type="button">↺</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <template id="task-template">
+    <article class="task-card" draggable="true">
+      <header>
+        <h3></h3>
+        <span class="task-id" hidden></span>
+      </header>
+      <div class="tags"></div>
+      <textarea class="task-note" placeholder="Notas rápidas..."></textarea>
+      <div class="card-footer">
+        <span class="created"></span>
+        <div class="card-actions">
+          <button class="move-left" type="button" title="Mover a la columna anterior">←</button>
+          <button class="move-right" type="button" title="Mover a la columna siguiente">→</button>
+          <button class="delete" type="button" title="Eliminar">🗑</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    const STORAGE_KEY = 'mini-project-hub-state-v1';
+    const columnOrder = ['todo', 'doing', 'done'];
+
+    let tasks = [];
+
+    const boardColumns = Array.from(document.querySelectorAll('.column'));
+    const form = document.getElementById('task-form');
+    const titleInput = document.getElementById('task-title');
+    const tagsInput = document.getElementById('task-tags');
+    const exportBtn = document.getElementById('export-csv');
+    const importBtn = document.getElementById('import-csv');
+    const clearBtn = document.getElementById('clear-all');
+    const fileInput = document.getElementById('csv-file');
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            tasks = parsed;
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar estado', error);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    function createTask({ title, tags }) {
+      const now = new Date();
+      const task = {
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        tags: tags.filter(Boolean),
+        note: '',
+        state: 'todo',
+        created: now.toISOString(),
+      };
+      tasks.push(task);
+      saveState();
+      renderBoard();
+    }
+
+    function formatDate(isoString) {
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleString();
+    }
+
+    function updateEmptyStates() {
+      boardColumns.forEach((column) => {
+        const body = column.querySelector('.column-body');
+        if (!body.children.length) {
+          if (!body.querySelector('.empty-state')) {
+            const empty = document.createElement('p');
+            empty.className = 'empty-state';
+            empty.textContent = 'Sin tareas aún. Añade una para comenzar.';
+            body.appendChild(empty);
+          }
+        } else {
+          const empty = body.querySelector('.empty-state');
+          if (empty) empty.remove();
+        }
+      });
+    }
+
+    function renderBoard() {
+      const bodies = document.querySelectorAll('.column-body');
+      bodies.forEach((body) => (body.innerHTML = ''));
+
+      tasks.forEach((task) => {
+        const column = document.querySelector(`.column[data-state="${task.state}"] .column-body`);
+        if (column) {
+          const card = buildTaskCard(task);
+          column.appendChild(card);
+        }
+      });
+
+      updateEmptyStates();
+    }
+
+    function buildTaskCard(task) {
+      const template = document.getElementById('task-template');
+      const fragment = template.content.cloneNode(true);
+      const card = fragment.querySelector('.task-card');
+      const titleEl = fragment.querySelector('h3');
+      const tagsContainer = fragment.querySelector('.tags');
+      const noteArea = fragment.querySelector('.task-note');
+      const createdEl = fragment.querySelector('.created');
+      const leftBtn = fragment.querySelector('.move-left');
+      const rightBtn = fragment.querySelector('.move-right');
+      const deleteBtn = fragment.querySelector('.delete');
+
+      card.dataset.id = task.id;
+      titleEl.textContent = task.title || 'Sin título';
+      noteArea.value = task.note || '';
+      createdEl.textContent = formatDate(task.created);
+
+      tagsContainer.innerHTML = '';
+      if (task.tags && task.tags.length) {
+        task.tags.forEach((tag) => {
+          const badge = document.createElement('span');
+          badge.className = 'tag';
+          badge.textContent = tag.trim();
+          tagsContainer.appendChild(badge);
+        });
+      }
+
+      const currentIndex = columnOrder.indexOf(task.state);
+      if (currentIndex <= 0) {
+        leftBtn.disabled = true;
+      }
+      if (currentIndex === columnOrder.length - 1) {
+        rightBtn.disabled = true;
+      }
+
+      leftBtn.addEventListener('click', () => moveTask(task.id, -1));
+      rightBtn.addEventListener('click', () => moveTask(task.id, 1));
+      deleteBtn.addEventListener('click', () => deleteTask(task.id));
+
+      noteArea.addEventListener('input', (event) => {
+        updateTaskNote(task.id, event.target.value);
+      });
+
+      card.addEventListener('dragstart', (event) => {
+        card.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', task.id);
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+
+      return card;
+    }
+
+    function moveTask(id, direction) {
+      const index = tasks.findIndex((task) => task.id === id);
+      if (index === -1) return;
+      const currentState = tasks[index].state;
+      const position = columnOrder.indexOf(currentState);
+      const nextPosition = position + direction;
+      if (nextPosition < 0 || nextPosition >= columnOrder.length) return;
+      tasks[index].state = columnOrder[nextPosition];
+      saveState();
+      renderBoard();
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter((task) => task.id !== id);
+      saveState();
+      renderBoard();
+    }
+
+    function updateTaskNote(id, note) {
+      const task = tasks.find((item) => item.id === id);
+      if (!task) return;
+      task.note = note;
+      saveState();
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const title = titleInput.value.trim();
+      const tags = tagsInput.value
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length);
+      if (!title) return;
+      createTask({ title, tags });
+      titleInput.value = '';
+      tagsInput.value = '';
+      titleInput.focus();
+    });
+
+    function escapeCsvValue(value) {
+      const stringValue = String(value ?? '');
+      const escaped = stringValue.replace(/"/g, '""');
+      return `"${escaped}"`;
+    }
+
+    function downloadCsv() {
+      const header = ['id', 'title', 'tags', 'note', 'state', 'created'];
+      const rows = tasks.map((task) => [
+        task.id,
+        task.title,
+        (task.tags || []).join('|'),
+        task.note,
+        task.state,
+        task.created,
+      ]);
+      const csv = [header, ...rows]
+        .map((row) => row.map(escapeCsvValue).join(','))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().split('T')[0];
+      link.href = url;
+      link.download = `mini-project-hub-${timestamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let current = [];
+      let value = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (char === '"') {
+          if (inQuotes && text[i + 1] === '"') {
+            value += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          current.push(value);
+          value = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (char === '\r' && text[i + 1] === '\n') {
+            i++;
+          }
+          current.push(value);
+          rows.push(current);
+          current = [];
+          value = '';
+        } else {
+          value += char;
+        }
+      }
+
+      if (value.length || current.length) {
+        current.push(value);
+        rows.push(current);
+      }
+
+      return rows.filter((row) => row.length && !(row.length === 1 && row[0] === ''));
+    }
+
+    function importCsv(text) {
+      const rows = parseCsv(text);
+      if (!rows.length) return;
+      const [header, ...dataRows] = rows;
+      const indices = {
+        id: header.indexOf('id'),
+        title: header.indexOf('title'),
+        tags: header.indexOf('tags'),
+        note: header.indexOf('note'),
+        state: header.indexOf('state'),
+        created: header.indexOf('created'),
+      };
+
+      const missing = Object.values(indices).some((value) => value === -1);
+      if (missing) {
+        alert('El CSV no contiene el formato esperado.');
+        return;
+      }
+
+      const imported = dataRows
+        .map((row) => {
+          const id = row[indices.id]?.trim();
+          const title = row[indices.title]?.trim() || 'Sin título';
+          const tagsRaw = row[indices.tags] ?? '';
+          const note = row[indices.note] ?? '';
+          const state = row[indices.state]?.trim();
+          const created = row[indices.created]?.trim();
+
+          if (!id || !columnOrder.includes(state)) {
+            return null;
+          }
+
+          return {
+            id,
+            title,
+            tags: tagsRaw ? tagsRaw.split('|').map((tag) => tag.trim()).filter(Boolean) : [],
+            note,
+            state,
+            created: created || new Date().toISOString(),
+          };
+        })
+        .filter(Boolean);
+
+      tasks = imported;
+      saveState();
+      renderBoard();
+    }
+
+    exportBtn.addEventListener('click', () => {
+      if (!tasks.length) {
+        alert('No hay tareas para exportar.');
+        return;
+      }
+      downloadCsv();
+    });
+
+    importBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result;
+        if (typeof text === 'string') {
+          importCsv(text);
+        }
+      };
+      reader.onerror = () => {
+        alert('No fue posible leer el archivo.');
+      };
+      reader.readAsText(file, 'utf-8');
+      fileInput.value = '';
+    });
+
+    clearBtn.addEventListener('click', () => {
+      const confirmed = confirm('¿Seguro que quieres borrar todas las tareas? Esta acción no se puede deshacer.');
+      if (!confirmed) return;
+      tasks = [];
+      saveState();
+      renderBoard();
+    });
+
+    boardColumns.forEach((column) => {
+      column.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        column.classList.add('drag-over');
+      });
+
+      column.addEventListener('dragleave', () => {
+        column.classList.remove('drag-over');
+      });
+
+      column.addEventListener('drop', (event) => {
+        event.preventDefault();
+        column.classList.remove('drag-over');
+        const id = event.dataTransfer.getData('text/plain');
+        const state = column.dataset.state;
+        if (!id || !state) return;
+        const task = tasks.find((item) => item.id === id);
+        if (!task) return;
+        task.state = state;
+        saveState();
+        renderBoard();
+      });
+    });
+
+    loadState();
+    renderBoard();
+
+    // Pomodoro timer
+    const pomodoroDisplay = document.getElementById('pomodoro-display');
+    const startBtn = document.getElementById('pomodoro-start');
+    const pauseBtn = document.getElementById('pomodoro-pause');
+    const resetBtn = document.getElementById('pomodoro-reset');
+
+    const POMODORO_DURATION = 25 * 60;
+    let remainingSeconds = POMODORO_DURATION;
+    let timerInterval = null;
+
+    function formatTime(seconds) {
+      const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const secs = String(seconds % 60).padStart(2, '0');
+      return `${mins}:${secs}`;
+    }
+
+    function updatePomodoroDisplay() {
+      pomodoroDisplay.textContent = formatTime(remainingSeconds);
+    }
+
+    function tick() {
+      if (remainingSeconds <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        remainingSeconds = 0;
+        updatePomodoroDisplay();
+        alert('¡Pomodoro completado! Tómate un descanso.');
+        return;
+      }
+      remainingSeconds -= 1;
+      updatePomodoroDisplay();
+    }
+
+    function startTimer() {
+      if (timerInterval) return;
+      if (remainingSeconds <= 0) {
+        remainingSeconds = POMODORO_DURATION;
+      }
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function pauseTimer() {
+      if (!timerInterval) return;
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      remainingSeconds = POMODORO_DURATION;
+      updatePomodoroDisplay();
+    }
+
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    updatePomodoroDisplay();
+  </script>
+</body>
+</html>
